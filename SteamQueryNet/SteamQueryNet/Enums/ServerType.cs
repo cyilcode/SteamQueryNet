@@ -1,9 +1,9 @@
 ﻿namespace SteamQueryNet.Enums
 {
-    public enum ServerType
+    public enum ServerType : byte
     {
-        Dedicated = 'd',
-        NonDedicated = 'l',
-        SourceTVRelay = 'p'
+        Dedicated = (byte)'d',
+        NonDedicated = (byte)'l',
+        SourceTVRelay = (byte)'p'
     }
 }

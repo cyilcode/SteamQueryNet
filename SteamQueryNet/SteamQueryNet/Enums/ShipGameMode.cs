@@ -1,6 +1,6 @@
 ﻿namespace SteamQueryNet.Enums
 {
-    public enum ShipGameMode
+    public enum ShipGameMode : byte
     {
         Hunt = 0,
         Elimination = 1,

@@ -1,5 +1,6 @@
 ﻿using SteamQueryNet.Enums;
 using SteamQueryNet.Models.TheShip;
+using SteamQueryNet.Utils;
 
 namespace SteamQueryNet.Models
 {
@@ -58,7 +59,7 @@ namespace SteamQueryNet.Models
         /// <summary>
         /// Indicates the operating system of the server.
         /// </summary>
-        public Environment Environment { get; set; }
+        public ServerEnvironment Environment { get; set; }
 
         /// <summary>
         /// Indicates whether the server requires a password.
@@ -73,6 +74,7 @@ namespace SteamQueryNet.Models
         /// <summary>
         /// This property only exist in a response if the server is running The Ship.
         /// </summary>
+        [ParseCustom]
         public ShipGameInfo ShipGameInfo { get; set; }
 
         /// <summary>
@@ -88,32 +90,45 @@ namespace SteamQueryNet.Models
         /// <summary>
         /// The server's game port number.
         /// </summary>
+        [EDF]
         public short Port { get; set; }
 
         /// <summary>
         /// Server's SteamID.
         /// </summary>
+        [EDF]
         public long SteamID { get; set; }
 
         /// <summary>
         /// Spectator port number for SourceTV.
         /// </summary>
+        [EDF]
         public short SourceTVPort { get; set; }
 
         /// <summary>
         /// Name of the spectator server for SourceTV.
         /// </summary>
+        [EDF]
         public string SourceTVServerName { get; set; }
 
         /// <summary>
         /// Tags that describe the game according to the server (for future use.)
         /// </summary>
+        [EDF]
         public string Keywords { get; set; }
 
         /// <summary>
         /// The server's 64-bit GameID. If this is present, a more accurate AppID is present in the low 24 bits.
         /// The earlier AppID could have been truncated as it was forced into 16-bit storage.
         /// </summary>
+        [EDF]
         public long GameID { get; set; }
+
+        /// <summary>
+        /// Calculated roundtrip time of the server.
+        /// Warning: this value will be calculated by SteamQueryNet instead of steam itself.
+        /// </summary>
+        [NotParsable]
+        public long Ping { get; set; }
     }
 }

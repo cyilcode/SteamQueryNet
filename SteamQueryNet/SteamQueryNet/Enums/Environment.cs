@@ -1,9 +1,9 @@
 ﻿namespace SteamQueryNet.Enums
 {
-    public enum Environment
+    public enum ServerEnvironment : byte
     {
-        Linux = 'l',
-        Windows = 'w',
-        Mac = 'm'
+        Linux = (byte)'l',
+        Windows = (byte)'w',
+        Mac = (byte)'m'
     }
 }
