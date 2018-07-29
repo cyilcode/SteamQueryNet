@@ -144,7 +144,7 @@ namespace SteamQueryNet
             byte[] response = SendRequest(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(-1));
             if (response.Length > 0)
             {
-                _currentChallenge = BitConverter.ToInt32(response.Skip(5).Take(sizeof(int)).ToArray(), 0);
+                _currentChallenge = BitConverter.ToInt32(response.Skip(RESPONSE_CODE_INDEX).Take(sizeof(int)).ToArray(), 0);
             }
         }
 
