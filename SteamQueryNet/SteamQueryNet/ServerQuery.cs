@@ -106,49 +106,10 @@ namespace SteamQueryNet
             try
             {
                 sInfo.Ping = new Ping().Send(_ipEndpoint.Address).RoundtripTime;
-                var request = BuildRequest(RequestHeaders.A2S_INFO, Encoding.UTF8.GetBytes(requestPayload));
-                _client.Send(request, request.Length);
-                byte[] response = _client.Receive(ref _ipEndpoint);
+                byte[] response = SendRequest(RequestHeaders.A2S_INFO, Encoding.UTF8.GetBytes(requestPayload));
                 if (response.Length > 0)
                 {
-                    IEnumerable<byte> lastSource = ExtractData(sInfo, response, nameof(sInfo.EDF));
-
-                    // Handle EDF's. This part looks hideous but i will get back to this after i get done with everything. Right now this works.
-                    if ((sInfo.EDF & 0x80) > 0)
-                    {
-                        (object result, int size) = ExtractMarshalType(lastSource, sInfo.Port.GetType());
-                        sInfo.Port = (short)result;
-                        lastSource = lastSource.Skip(size);
-                    }
-                    if ((sInfo.EDF & 0x10) > 0)
-                    {
-                        (object result, int size) = ExtractMarshalType(lastSource, sInfo.SteamID.GetType());
-                        sInfo.SteamID = (long)result;
-                        lastSource = lastSource.Skip(size);
-                    }
-                    if ((sInfo.EDF & 0x40) > 0)
-                    {
-                        (object result, int size) = ExtractMarshalType(lastSource, sInfo.SourceTVPort.GetType());
-                        sInfo.SourceTVPort = (short)result;
-                        lastSource = lastSource.Skip(size);
-
-                        IEnumerable<byte> takenBytes = lastSource.TakeWhile(x => x != 0);
-                        sInfo.SourceTVServerName = Encoding.UTF8.GetString(takenBytes.ToArray());
-                        lastSource = lastSource.Skip(takenBytes.Count() + 1);
-
-                    }
-                    if ((sInfo.EDF & 0x20) > 0)
-                    {
-                        IEnumerable<byte> takenBytes = lastSource.TakeWhile(x => x != 0);
-                        sInfo.Keywords = Encoding.UTF8.GetString(takenBytes.ToArray());
-                        lastSource = lastSource.Skip(takenBytes.Count() + 1);
-                    }
-                    if ((sInfo.EDF & 0x01) > 0)
-                    {
-                        (object result, int size) = ExtractMarshalType(lastSource, sInfo.GameID.GetType());
-                        sInfo.GameID = (long)result;
-                        lastSource = lastSource.Skip(size);
-                    }
+                    ExtractData(sInfo, response, nameof(sInfo.EDF));
                 }
             }
             catch (Exception)
@@ -158,6 +119,13 @@ namespace SteamQueryNet
             }
 
             return sInfo;
+        }
+
+        private byte[] SendRequest(byte requestHeader, byte[] payload = null)
+        {
+            var request = BuildRequest(requestHeader, payload);
+            _client.Send(request, request.Length);
+            return _client.Receive(ref _ipEndpoint);
         }
 
         public void RenewChallenge()
@@ -171,7 +139,7 @@ namespace SteamQueryNet
             return extraParams != null ? request.Concat(extraParams).ToArray() : request;
         }
 
-        private IEnumerable<byte> ExtractData<TObject>(TObject objectRef, byte[] dataSource, string stopAt = "")
+        private void ExtractData<TObject>(TObject objectRef, byte[] dataSource, string edfPropName = "")
             where TObject : class
         {
             IEnumerable<byte> takenBytes = new List<byte>();
@@ -182,6 +150,14 @@ namespace SteamQueryNet
 
             foreach (PropertyInfo property in propsOfObject)
             {
+                CustomAttributeData edfInfo = property.CustomAttributes.FirstOrDefault(x => x.AttributeType == typeof(EDFAttribute));
+                if (edfInfo != null)
+                {
+                    byte edfValue = (byte)typeof(TObject).GetProperty(edfPropName).GetValue(objectRef);
+                    byte edfPropertyConditionValue = (byte)edfInfo.ConstructorArguments[0].Value;
+                    if ((edfValue & edfPropertyConditionValue) <= 0) { continue; }
+                }
+
                 if (property.PropertyType == typeof(string))
                 {
                     takenBytes = strippedSource.TakeWhile(x => x != 0);
@@ -195,14 +171,7 @@ namespace SteamQueryNet
                     property.SetValue(objectRef, property.PropertyType.IsEnum ? Enum.Parse(property.PropertyType, result.ToString()) : result);
                     strippedSource = strippedSource.Skip(size);
                 }
-
-                if (property.Name == stopAt)
-                {
-                    break;
-                }
             }
-
-            return strippedSource;
         }
 
         private (object, int) ExtractMarshalType(IEnumerable<byte> source, Type type)

@@ -16,6 +16,7 @@ namespace SteamQueryNet.Tests
         public void ShouldInitializeWithProperHost(string host)
         {
             var squery = new ServerQuery(host, PORT);
+            squery.GetServerInfo();
         }
 
         [Theory]

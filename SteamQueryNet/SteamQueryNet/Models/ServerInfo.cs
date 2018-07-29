@@ -73,6 +73,7 @@ namespace SteamQueryNet.Models
 
         /// <summary>
         /// This property only exist in a response if the server is running The Ship.
+        /// Warning: this property information is not supported by SteamQueryNet yet.
         /// </summary>
         [ParseCustom]
         public ShipGameInfo ShipGameInfo { get; set; }
@@ -90,38 +91,38 @@ namespace SteamQueryNet.Models
         /// <summary>
         /// The server's game port number.
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.Port)]
         public short Port { get; set; }
 
         /// <summary>
         /// Server's SteamID.
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.SteamID)]
         public long SteamID { get; set; }
 
         /// <summary>
         /// Spectator port number for SourceTV.
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.SourceTVPort)]
         public short SourceTVPort { get; set; }
 
         /// <summary>
         /// Name of the spectator server for SourceTV.
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.SourceTVServerName)]
         public string SourceTVServerName { get; set; }
 
         /// <summary>
         /// Tags that describe the game according to the server (for future use.)
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.Keywords)]
         public string Keywords { get; set; }
 
         /// <summary>
         /// The server's 64-bit GameID. If this is present, a more accurate AppID is present in the low 24 bits.
         /// The earlier AppID could have been truncated as it was forced into 16-bit storage.
         /// </summary>
-        [EDF]
+        [EDF((byte)EDFFlags.GameID)]
         public long GameID { get; set; }
 
         /// <summary>
