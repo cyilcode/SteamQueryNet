@@ -277,7 +277,7 @@ namespace SteamQueryNet
                  * Convert the parsed value to its type and assign it.
                  */
 
-                /* We have to handle strings seperately since their size is unknown and they are also null terminated.
+                /* We have to handle strings separately since their size is unknown and they are also null terminated.
                  * Check here: https://developer.valvesoftware.com/wiki/String for further information about Strings in the protocol.
                  */
                 if (property.PropertyType == typeof(string))
