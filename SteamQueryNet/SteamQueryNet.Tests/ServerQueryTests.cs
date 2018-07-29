@@ -6,8 +6,8 @@ namespace SteamQueryNet.Tests
 {
     public class ServerQueryTests
     {
-        private const string IP_ADDRESS = "54.37.111.216";
-        private const string HOST_NAME = "surf.wasdzone.com";
+        private const string IP_ADDRESS = "127.0.0.1";
+        private const string HOST_NAME = "localhost";
         private const int PORT = 27015;
 
         [Theory]
@@ -16,7 +16,6 @@ namespace SteamQueryNet.Tests
         public void ShouldInitializeWithProperHost(string host)
         {
             var squery = new ServerQuery(host, PORT);
-            squery.GetServerInfo();
         }
 
         [Theory]
