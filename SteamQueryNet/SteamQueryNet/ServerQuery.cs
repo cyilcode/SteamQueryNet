@@ -21,6 +21,13 @@ namespace SteamQueryNet
         void RenewChallenge();
 
         /// <summary>
+        /// Configures and Connects the created instance of SteamQuery UDP socket for Steam Server Query Operations.
+        /// </summary>
+        /// <param name="serverAddress">IPAddress or HostName of the server that queries will be sent.</param>
+        /// <param name="port">Port of the server that queries will be sent.</param>
+        void Connect(string serverAddress, int port);
+
+        /// <summary>
         /// Requests and serializes the server information.
         /// </summary>
         /// <returns>Serialized ServerInfo instance.</returns>
@@ -46,10 +53,10 @@ namespace SteamQueryNet
         private const int RESPONSE_HEADER_COUNT = 6;
         private const int RESPONSE_CODE_INDEX = 5;
 
-        private readonly int _port;
         private readonly UdpClient _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0));
         private IPEndPoint _ipEndpoint;
 
+        private int _port;
         private int _currentChallenge;
 
         /// <summary>
@@ -74,50 +81,24 @@ namespace SteamQueryNet
         public int ReceiveTimeout { get; set; }
 
         /// <summary>
+        /// Creates a new instance of ServerQuery without UDP socket connection.
+        /// </summary>
+        public ServerQuery() { }
+
+        /// <summary>
         /// Creates a new ServerQuery instance for Steam Server Query Operations.
         /// </summary>
         /// <param name="serverAddress">IPAddress or HostName of the server that queries will be sent.</param>
         /// <param name="port">Port of the server that queries will be sent.</param>
         public ServerQuery(string serverAddress, int port)
         {
-            // Check the port range
-            if (_port < IPEndPoint.MinPort || _port > IPEndPoint.MaxPort)
-            {
-                throw new ArgumentException($"Port should be between {IPEndPoint.MinPort} and {IPEndPoint.MaxPort}");
-            }
+            PrepareAndConnect(serverAddress, port);
+        }
 
-            _port = port;
-            // Try to parse the serverAddress as IP first
-            if (IPAddress.TryParse(serverAddress, out IPAddress parsedIpAddress))
-            {
-                // Yep its an IP.
-                _ipEndpoint = new IPEndPoint(parsedIpAddress, _port);
-            }
-            else
-            {
-                // Nope it might be a hostname.
-                try
-                {
-                    IPAddress[] addresslist = Dns.GetHostAddresses(serverAddress);
-                    if (addresslist.Length > 0)
-                    {
-                        // We get the first address.
-                        _ipEndpoint = new IPEndPoint(addresslist[0], _port);
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"Invalid host address {serverAddress}");
-                    }
-                }
-                catch (SocketException ex)
-                {
-                    throw new ArgumentException("Could not reach the hostname.", ex);
-                }
-            }
-
-            _client.Client.SendTimeout = SendTimeout;
-            _client.Client.ReceiveTimeout = ReceiveTimeout;
-            _client.Connect(_ipEndpoint);
+        /// <inheritdoc/>
+        public void Connect(string serverAddress, int port)
+        {
+            PrepareAndConnect(serverAddress, port);
         }
 
         /// <inheritdoc/>
@@ -194,6 +175,49 @@ namespace SteamQueryNet
         {
             _client.Close();
             _client.Dispose();
+        }
+
+        private void PrepareAndConnect(string serverAddress, int port)
+        {
+            _port = port;
+
+            // Check the port range
+            if (_port < IPEndPoint.MinPort || _port > IPEndPoint.MaxPort)
+            {
+                throw new ArgumentException($"Port should be between {IPEndPoint.MinPort} and {IPEndPoint.MaxPort}");
+            }
+
+            // Try to parse the serverAddress as IP first
+            if (IPAddress.TryParse(serverAddress, out IPAddress parsedIpAddress))
+            {
+                // Yep its an IP.
+                _ipEndpoint = new IPEndPoint(parsedIpAddress, _port);
+            }
+            else
+            {
+                // Nope it might be a hostname.
+                try
+                {
+                    IPAddress[] addresslist = Dns.GetHostAddresses(serverAddress);
+                    if (addresslist.Length > 0)
+                    {
+                        // We get the first address.
+                        _ipEndpoint = new IPEndPoint(addresslist[0], _port);
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Invalid host address {serverAddress}");
+                    }
+                }
+                catch (SocketException ex)
+                {
+                    throw new ArgumentException("Could not reach the hostname.", ex);
+                }
+            }
+
+            _client.Client.SendTimeout = SendTimeout;
+            _client.Client.ReceiveTimeout = ReceiveTimeout;
+            _client.Connect(_ipEndpoint);
         }
 
         private List<TObject> ExtractListData<TObject>(byte[] rawSource)
