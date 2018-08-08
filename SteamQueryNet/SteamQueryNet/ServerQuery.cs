@@ -25,7 +25,8 @@ namespace SteamQueryNet
         /// </summary>
         /// <param name="serverAddress">IPAddress or HostName of the server that queries will be sent.</param>
         /// <param name="port">Port of the server that queries will be sent.</param>
-        void Connect(string serverAddress, int port);
+        /// <returns>Connected instance of ServerQuery.</returns>
+        IServerQuery Connect(string serverAddress, int port);
 
         /// <summary>
         /// Requests and serializes the server information.
@@ -96,9 +97,10 @@ namespace SteamQueryNet
         }
 
         /// <inheritdoc/>
-        public void Connect(string serverAddress, int port)
+        public IServerQuery Connect(string serverAddress, int port)
         {
             PrepareAndConnect(serverAddress, port);
+            return this;
         }
 
         /// <inheritdoc/>
