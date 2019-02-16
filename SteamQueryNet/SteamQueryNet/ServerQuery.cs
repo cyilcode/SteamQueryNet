@@ -2,6 +2,7 @@
 using SteamQueryNet.Utils;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -9,6 +10,8 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SteamQueryNet
 {
@@ -18,7 +21,14 @@ namespace SteamQueryNet
         /// <summary>
         /// Renews the server challenge code of the ServerQuery instance in order to be able to execute further operations.
         /// </summary>
-        void RenewChallenge();
+        /// <returns>The new created challenge.</returns>
+        int RenewChallenge();
+
+        /// <summary>
+        /// Renews the server challenge code of the ServerQuery instance in order to be able to execute further operations.
+        /// </summary>
+        /// <returns>The new created challenge.</returns>
+        Task<int> RenewChallengeAsync();
 
         /// <summary>
         /// Configures and Connects the created instance of SteamQuery UDP socket for Steam Server Query Operations.
@@ -35,10 +45,22 @@ namespace SteamQueryNet
         ServerInfo GetServerInfo();
 
         /// <summary>
+        /// Requests and serializes the server information.
+        /// </summary>
+        /// <returns>Serialized ServerInfo instance.</returns>
+        Task<ServerInfo> GetServerInfoAsync();
+
+        /// <summary>
         /// Requests and serializes the list of player information. 
         /// </summary>
         /// <returns>Serialized list of Player instances.</returns>
         List<Player> GetPlayers();
+
+        /// <summary>
+        /// Requests and serializes the list of player information. 
+        /// </summary>
+        /// <returns>Serialized list of Player instances.</returns>
+        Task<List<Player>> GetPlayersAsync();
 
         /// <summary>
         /// Requests and serializes the list of rules defined by the server.
@@ -47,6 +69,14 @@ namespace SteamQueryNet
         /// </summary>
         /// <returns>Serialized list of Rule instances.</returns>
         List<Rule> GetRules();
+
+        /// <summary>
+        /// Requests and serializes the list of rules defined by the server.
+        /// Warning: CS:GO Rules reply is broken since update CSGO 1.32.3.0 (Feb 21, 2014). 
+        /// Before the update rules got truncated when exceeding MTU, after the update rules reply is not sent at all.
+        /// </summary>
+        /// <returns>Serialized list of Rule instances.</returns>
+        Task<List<Rule>> GetRulesAsync();
     }
 
     public class ServerQuery : IServerQuery, IDisposable
@@ -104,7 +134,7 @@ namespace SteamQueryNet
         }
 
         /// <inheritdoc/>
-        public ServerInfo GetServerInfo()
+        public async Task<ServerInfo> GetServerInfoAsync()
         {
             const string requestPayload = "Source Engine Query\0";
             var sInfo = new ServerInfo
@@ -112,7 +142,7 @@ namespace SteamQueryNet
                 Ping = new Ping().Send(_ipEndpoint.Address).RoundtripTime
             };
 
-            byte[] response = SendRequest(RequestHeaders.A2S_INFO, Encoding.UTF8.GetBytes(requestPayload));
+            byte[] response = await SendRequestAsync(RequestHeaders.A2S_INFO, Encoding.UTF8.GetBytes(requestPayload));
             if (response.Length > 0)
             {
                 ExtractData(sInfo, response, nameof(sInfo.EDF), true);
@@ -122,24 +152,38 @@ namespace SteamQueryNet
         }
 
         /// <inheritdoc/>
-        public void RenewChallenge()
+        public ServerInfo GetServerInfo()
         {
-            byte[] response = SendRequest(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(-1));
+            return RunSync(GetServerInfoAsync);
+        }
+
+        /// <inheritdoc/>
+        public async Task<int> RenewChallengeAsync()
+        {
+            byte[] response = await SendRequestAsync(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(-1));
             if (response.Length > 0)
             {
                 _currentChallenge = BitConverter.ToInt32(response.Skip(RESPONSE_CODE_INDEX).Take(sizeof(int)).ToArray(), 0);
             }
+
+            return _currentChallenge;
         }
 
         /// <inheritdoc/>
-        public List<Player> GetPlayers()
+        public int RenewChallenge()
+        {
+            return RunSync(RenewChallengeAsync);
+        }
+
+        /// <inheritdoc/>
+        public async Task<List<Player>> GetPlayersAsync()
         {
             if (_currentChallenge == 0)
             {
-                RenewChallenge();
+                await RenewChallengeAsync();
             }
 
-            byte[] response = SendRequest(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(_currentChallenge));
+            byte[] response = await SendRequestAsync(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(_currentChallenge));
             if (response.Length > 0)
             {
                 return ExtractListData<Player>(response);
@@ -151,14 +195,20 @@ namespace SteamQueryNet
         }
 
         /// <inheritdoc/>
-        public List<Rule> GetRules()
+        public List<Player> GetPlayers()
+        {
+            return RunSync(GetPlayersAsync);
+        }
+
+        /// <inheritdoc/>
+        public async Task<List<Rule>> GetRulesAsync()
         {
             if (_currentChallenge == 0)
             {
-                RenewChallenge();
+                await RenewChallengeAsync();
             }
 
-            byte[] response = SendRequest(RequestHeaders.A2S_RULES, BitConverter.GetBytes(_currentChallenge));
+            byte[] response = await SendRequestAsync(RequestHeaders.A2S_RULES, BitConverter.GetBytes(_currentChallenge));
             if (response.Length > 0)
             {
                 var rls = ExtractListData<Rule>(response);
@@ -168,6 +218,12 @@ namespace SteamQueryNet
             {
                 throw new InvalidOperationException("Server did not response the query");
             }
+        }
+
+        /// <inheritdoc/>
+        public List<Rule> GetRules()
+        {
+            return RunSync(GetRulesAsync);
         }
 
         /// <summary>
@@ -247,11 +303,12 @@ namespace SteamQueryNet
             return objectList;
         }
 
-        private byte[] SendRequest(byte requestHeader, byte[] payload = null)
+        private async Task<byte[]> SendRequestAsync(byte requestHeader, byte[] payload = null)
         {
             var request = BuildRequest(requestHeader, payload);
-            _client.Send(request, request.Length);
-            return _client.Receive(ref _ipEndpoint);
+            await _client.SendAsync(request, request.Length);
+            UdpReceiveResult result = await _client.ReceiveAsync();
+            return result.Buffer;
         }
 
         private byte[] BuildRequest(byte headerCode, byte[] extraParams = null)
@@ -261,7 +318,9 @@ namespace SteamQueryNet
             var request = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, headerCode };
 
             // If we have any extra payload, concatenate those into our requestHeaders and return;
-            return extraParams != null ? request.Concat(extraParams).ToArray() : request;
+            return extraParams != null
+                ? request.Concat(extraParams).ToArray()
+                : request;
         }
 
         private IEnumerable<byte> ExtractData<TObject>(TObject objectRef, byte[] dataSource, string edfPropName = "", bool stripHeaders = false)
@@ -270,7 +329,9 @@ namespace SteamQueryNet
             IEnumerable<byte> takenBytes = new List<byte>();
 
             // We can be a good guy and ask for any extra jobs :)
-            IEnumerable<byte> enumerableSource = stripHeaders ? dataSource.Skip(RESPONSE_HEADER_COUNT) : dataSource;
+            IEnumerable<byte> enumerableSource = stripHeaders
+                ? dataSource.Skip(RESPONSE_HEADER_COUNT) 
+                : dataSource;
 
             // We get every property that does not contain ParseCustom and NotParsable attributes on them to iterate through all and parse/assign their values.
             IEnumerable<PropertyInfo> propsOfObject = typeof(TObject).GetProperties()
@@ -320,14 +381,18 @@ namespace SteamQueryNet
                 else
                 {
                     // Is the property an Enum ? if yes we should be getting the underlying type since it might differ.
-                    Type typeOfProperty = property.PropertyType.IsEnum ? property.PropertyType.GetEnumUnderlyingType() : property.PropertyType;
+                    Type typeOfProperty = property.PropertyType.IsEnum
+                        ? property.PropertyType.GetEnumUnderlyingType()
+                        : property.PropertyType;
 
                     // Extract the value and the size from the source.
                     (object result, int size) = ExtractMarshalType(enumerableSource, typeOfProperty);
 
                     /* If the property is an enum we should parse it first then assign its value,
                      * if not we can just give it to SetValue since it was converted by ExtractMarshalType already.*/
-                    property.SetValue(objectRef, property.PropertyType.IsEnum ? Enum.Parse(property.PropertyType, result.ToString()) : result);
+                    property.SetValue(objectRef, property.PropertyType.IsEnum 
+                        ? Enum.Parse(property.PropertyType, result.ToString())
+                        : result);
 
                     // Update the source by skipping the amount of bytes taken from the source.
                     enumerableSource = enumerableSource.Skip(size);
@@ -336,6 +401,18 @@ namespace SteamQueryNet
 
             // We return the last state of the processed source.
             return enumerableSource;
+        }
+
+        private TResult RunSync<TResult>(Func<Task<TResult>> func)
+        {
+            var cultureUi = CultureInfo.CurrentUICulture;
+            var culture = CultureInfo.CurrentCulture;
+            return new TaskFactory().StartNew(() =>
+            {
+                Thread.CurrentThread.CurrentCulture = culture;
+                Thread.CurrentThread.CurrentUICulture = cultureUi;
+                return func();
+            }).Unwrap().GetAwaiter().GetResult();
         }
 
         private (object, int) ExtractMarshalType(IEnumerable<byte> source, Type type)
