@@ -4,12 +4,23 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Cem YILMAZ</Authors>
     <Company>Cem YILMAZ</Company>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.0.3</AssemblyVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.0.4</AssemblyVersion>
     <NeutralLanguage>en</NeutralLanguage>
     <PackageTags>steam,query,net,steamquery,steamquerynet</PackageTags>
-    <FileVersion>1.0.0.3</FileVersion>
-    <PackageReleaseNotes>Add async API support</PackageReleaseNotes>
+    <FileVersion>1.0.0.4</FileVersion>
+    <PackageReleaseNotes>Fix response header strip miscalculation</PackageReleaseNotes>
+    <Description>SteamQueryNet is a C# wrapper for Steam Server Queries UDP protocol. It is;
+
+Light
+Dependency free
+Written in .net standard 2.0 so that it works with both .NET framework 4.6+ and core.</Description>
+    <Copyright />
+    <PackageLicenseUrl>https://github.com/cyilcode/SteamQueryNet/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/cyilcode/SteamQueryNet</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/cyilcode/SteamQueryNet</PackageIconUrl>
+    <RepositoryUrl>https://github.com/cyilcode/SteamQueryNet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
