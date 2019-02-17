@@ -368,8 +368,10 @@ namespace SteamQueryNet
                  */
                 if (property.PropertyType == typeof(string))
                 {
-                    // Take till the termination.
-                    takenBytes = enumerableSource.TakeWhile(x => x != 0);
+                    // Clear the buffer first then take till the termination.
+                    takenBytes = enumerableSource
+                        .SkipWhile(x => x == 0)
+                        .TakeWhile(x => x != 0);
 
                     // Parse it into a string.
                     property.SetValue(objectRef, Encoding.UTF8.GetString(takenBytes.ToArray()));
@@ -385,7 +387,7 @@ namespace SteamQueryNet
                         : property.PropertyType;
 
                     // Extract the value and the size from the source.
-                    (object result, int size) = ExtractMarshalType(enumerableSource, typeOfProperty);
+                    (object result, int size) = ExtractMarshalType(enumerableSource.SkipWhile(x => x == 0), typeOfProperty);
 
                     /* If the property is an enum we should parse it first then assign its value,
                      * if not we can just give it to SetValue since it was converted by ExtractMarshalType already.*/
