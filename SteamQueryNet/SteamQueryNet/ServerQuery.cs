@@ -81,7 +81,7 @@ namespace SteamQueryNet
 
     public class ServerQuery : IServerQuery, IDisposable
     {
-        private const int RESPONSE_HEADER_COUNT = 6;
+        private const int RESPONSE_HEADER_COUNT = 5;
         private const int RESPONSE_CODE_INDEX = 5;
 
         private readonly UdpClient _client = new UdpClient(new IPEndPoint(IPAddress.Any, 0));
@@ -211,7 +211,6 @@ namespace SteamQueryNet
             byte[] response = await SendRequestAsync(RequestHeaders.A2S_RULES, BitConverter.GetBytes(_currentChallenge));
             if (response.Length > 0)
             {
-                var rls = ExtractListData<Rule>(response);
                 return ExtractListData<Rule>(response);
             }
             else
@@ -330,7 +329,7 @@ namespace SteamQueryNet
 
             // We can be a good guy and ask for any extra jobs :)
             IEnumerable<byte> enumerableSource = stripHeaders
-                ? dataSource.Skip(RESPONSE_HEADER_COUNT) 
+                ? dataSource.Skip(RESPONSE_HEADER_COUNT)
                 : dataSource;
 
             // We get every property that does not contain ParseCustom and NotParsable attributes on them to iterate through all and parse/assign their values.
@@ -369,8 +368,10 @@ namespace SteamQueryNet
                  */
                 if (property.PropertyType == typeof(string))
                 {
-                    // Take till the termination.
-                    takenBytes = enumerableSource.TakeWhile(x => x != 0);
+                    // Clear the buffer first then take till the termination.
+                    takenBytes = enumerableSource
+                        .SkipWhile(x => x == 0)
+                        .TakeWhile(x => x != 0);
 
                     // Parse it into a string.
                     property.SetValue(objectRef, Encoding.UTF8.GetString(takenBytes.ToArray()));
@@ -386,11 +387,11 @@ namespace SteamQueryNet
                         : property.PropertyType;
 
                     // Extract the value and the size from the source.
-                    (object result, int size) = ExtractMarshalType(enumerableSource, typeOfProperty);
+                    (object result, int size) = ExtractMarshalType(enumerableSource.SkipWhile(x => x == 0), typeOfProperty);
 
                     /* If the property is an enum we should parse it first then assign its value,
                      * if not we can just give it to SetValue since it was converted by ExtractMarshalType already.*/
-                    property.SetValue(objectRef, property.PropertyType.IsEnum 
+                    property.SetValue(objectRef, property.PropertyType.IsEnum
                         ? Enum.Parse(property.PropertyType, result.ToString())
                         : result);
 

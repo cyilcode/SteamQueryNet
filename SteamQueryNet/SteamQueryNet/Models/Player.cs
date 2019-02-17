@@ -35,9 +35,18 @@ namespace SteamQueryNet.Models
             get
             {
                 TimeSpan totalSpan = TimeSpan.FromSeconds(Duration);
-                string parsedHours = totalSpan.Hours >= 10 ? totalSpan.Hours.ToString() : $"0{totalSpan.Hours}";
-                string parsedMinutes = totalSpan.Minutes >= 10 ? totalSpan.Minutes.ToString() : $"0{totalSpan.Minutes}";
-                string parsedSeconds = totalSpan.Seconds >= 10 ? totalSpan.Seconds.ToString() : $"0{totalSpan.Seconds}";
+                string parsedHours = totalSpan.Hours >= 10
+                    ? totalSpan.Hours.ToString()
+                    : $"0{totalSpan.Hours}";
+
+                string parsedMinutes = totalSpan.Minutes >= 10
+                    ? totalSpan.Minutes.ToString()
+                    : $"0{totalSpan.Minutes}";
+
+                string parsedSeconds = totalSpan.Seconds >= 10
+                    ? totalSpan.Seconds.ToString()
+                    : $"0{totalSpan.Seconds}";
+
                 return $"{parsedHours}:{parsedMinutes}:{parsedSeconds}";
             }
         }
