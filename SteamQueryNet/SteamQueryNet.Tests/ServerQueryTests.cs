@@ -6,16 +6,15 @@ namespace SteamQueryNet.Tests
 {
     public class ServerQueryTests
     {
-        private const string IP_ADDRESS = "127.0.0.1";
-        private const string HOST_NAME = "localhost";
+        private const string IP_ADDRESS = "209.222.101.220";
         private const int PORT = 27015;
 
         [Theory]
         [InlineData(IP_ADDRESS)]
-        [InlineData(HOST_NAME)]
         public void ShouldInitializeWithProperHost(string host)
         {
             var squery = new ServerQuery(host, PORT);
+            var t = squery.GetServerInfo();
         }
 
         [Theory]

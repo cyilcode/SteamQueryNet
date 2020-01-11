@@ -284,10 +284,13 @@ namespace SteamQueryNet
             var objectList = new List<TObject>();
 
             // Skip the response headers.
-            IEnumerable<byte> dataSource = rawSource.Skip(RESPONSE_HEADER_COUNT);
+            byte player_count = rawSource[RESPONSE_CODE_INDEX];
+
+            // Skip +1 for player_count
+            IEnumerable<byte> dataSource = rawSource.Skip(RESPONSE_HEADER_COUNT + 1);
 
             // Iterate amount of times that the server said.
-            for (byte i = 0; i < rawSource[RESPONSE_CODE_INDEX]; i++)
+            for (byte i = 0; i < player_count; i++)
             {
                 // Activate a new instance of the object.
                 var objectInstance = Activator.CreateInstance<TObject>();
@@ -387,7 +390,7 @@ namespace SteamQueryNet
                         : property.PropertyType;
 
                     // Extract the value and the size from the source.
-                    (object result, int size) = ExtractMarshalType(enumerableSource.SkipWhile(x => x == 0), typeOfProperty);
+                    (object result, int size) = ExtractMarshalType(enumerableSource, typeOfProperty);
 
                     /* If the property is an enum we should parse it first then assign its value,
                      * if not we can just give it to SetValue since it was converted by ExtractMarshalType already.*/

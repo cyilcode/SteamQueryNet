@@ -39,7 +39,20 @@ namespace SteamQueryNet.Models
         /// <summary>
         /// Number of players on the server.
         /// </summary>
-        public byte Players { get; set; }
+
+        private byte _players;
+        public byte Players
+        {
+            get
+            {
+                // Some servers send bots as players. We don't want that here.
+                return (byte)(this._players - this.Bots);
+            }
+            set
+            {
+                this._players = value;
+            }
+        }
 
         /// <summary>
         /// Maximum number of players the server reports it can hold.
