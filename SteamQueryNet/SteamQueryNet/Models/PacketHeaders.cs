@@ -1,6 +1,6 @@
 ﻿namespace SteamQueryNet.Models
 {
-    public sealed class RequestHeaders
+    internal sealed class RequestHeaders
     {
         public const byte A2S_INFO = 0x54;
 

@@ -1,6 +1,6 @@
 ﻿namespace SteamQueryNet.Models
 {
-    public sealed class Rule
+    public class Rule
     {
         /// <summary>
         /// Name of the rule.

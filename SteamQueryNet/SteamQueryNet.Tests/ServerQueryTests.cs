@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Net;
+
 using Xunit;
 
 namespace SteamQueryNet.Tests
 {
     public class ServerQueryTests
     {
-        private const string IP_ADDRESS = "209.222.101.220";
+        private const string IP_ADDRESS = "54.37.111.216";
         private const int PORT = 27015;
 
         [Theory]
@@ -14,18 +14,7 @@ namespace SteamQueryNet.Tests
         public void ShouldInitializeWithProperHost(string host)
         {
             var squery = new ServerQuery(host, PORT);
-            var t = squery.GetServerInfo();
-        }
-
-        [Theory]
-        [InlineData(IPEndPoint.MaxPort + 1)]
-        [InlineData(IPEndPoint.MinPort - 1)]
-        public void ShouldNotInitializeWithAPortOutOfRange(int port)
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                var squery = new ServerQuery(IP_ADDRESS, port);
-            });
+            var t = squery.GetPlayers();
         }
 
         [Theory]

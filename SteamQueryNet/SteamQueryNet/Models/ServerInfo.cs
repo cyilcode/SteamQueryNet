@@ -1,10 +1,10 @@
 ﻿using SteamQueryNet.Enums;
 using SteamQueryNet.Models.TheShip;
-using SteamQueryNet.Utils;
+using SteamQueryNet.Attributes;
 
 namespace SteamQueryNet.Models
 {
-    public sealed class ServerInfo
+    public class ServerInfo
     {
         /// <summary>
         /// Protocol version used by the server.
