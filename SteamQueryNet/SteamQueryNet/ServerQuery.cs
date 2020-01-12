@@ -1,4 +1,5 @@
-﻿using SteamQueryNet.Models;
+﻿using SteamQueryNet.Interfaces;
+using SteamQueryNet.Models;
 using SteamQueryNet.Utils;
 
 using System;
@@ -108,7 +109,7 @@ namespace SteamQueryNet
         private ushort _port;
         private int _currentChallenge;
 
-        internal virtual UdpClient UdpClient { get; private set; }
+        internal virtual IUdpClient UdpClient { get; private set; }
 
         /// <summary>
         /// Reflects the udp client connection state.
@@ -117,7 +118,7 @@ namespace SteamQueryNet
         {
             get
             {
-                return UdpClient.Client.Connected;
+                return UdpClient.IsConnected;
             }
         }
 
@@ -136,7 +137,7 @@ namespace SteamQueryNet
         /// </summary>
         /// <param name="udpClient">UdpClient to communicate.</param>
         /// <param name="remoteEndpoint">Remote server endpoint.</param>
-        public ServerQuery(UdpClient udpClient, IPEndPoint remoteEndpoint)
+        public ServerQuery(IUdpClient udpClient, IPEndPoint remoteEndpoint)
         {
             UdpClient = udpClient;
             _remoteIpEndpoint = remoteEndpoint;
@@ -174,7 +175,7 @@ namespace SteamQueryNet
         /// <param name="serverAddressAndPort">IPAddress or HostName of the server and port separated by a colon(:) or a comma(,).</param>
         public ServerQuery(IPEndPoint customLocalIPEndpoint, string serverAddressAndPort)
         {
-            UdpClient = new UdpClient(customLocalIPEndpoint);
+            UdpClient = new UdpWrapper(customLocalIPEndpoint, SendTimeout, ReceiveTimeout);
             (string serverAddress, ushort port) = Helpers.ResolveIPAndPortFromString(serverAddressAndPort);
             PrepareAndConnect(serverAddress, port);
         }
@@ -187,7 +188,7 @@ namespace SteamQueryNet
         /// <param name="port">Port of the server that queries will be sent.</param>
         public ServerQuery(IPEndPoint customLocalIPEndpoint, string serverAddress, ushort port)
         {
-            UdpClient = new UdpClient(customLocalIPEndpoint);
+            UdpClient = new UdpWrapper(customLocalIPEndpoint, SendTimeout, ReceiveTimeout);
             PrepareAndConnect(serverAddress, port);
         }
 
@@ -209,7 +210,7 @@ namespace SteamQueryNet
         /// <inheritdoc/>
         public IServerQuery Connect(IPEndPoint customLocalIPEndpoint, string serverAddressAndPort)
         {
-            UdpClient = new UdpClient(customLocalIPEndpoint);
+            UdpClient = new UdpWrapper(customLocalIPEndpoint, SendTimeout, ReceiveTimeout);
             (string serverAddress, ushort port) = Helpers.ResolveIPAndPortFromString(serverAddressAndPort);
             PrepareAndConnect(serverAddress, port);
             return this;
@@ -218,7 +219,7 @@ namespace SteamQueryNet
         /// <inheritdoc/>
         public IServerQuery Connect(IPEndPoint customLocalIPEndpoint, string serverAddress, ushort port)
         {
-            UdpClient = new UdpClient(customLocalIPEndpoint);
+            UdpClient = new UdpWrapper(customLocalIPEndpoint, SendTimeout, ReceiveTimeout);
             PrepareAndConnect(serverAddress, port);
             return this;
         }
@@ -226,13 +227,12 @@ namespace SteamQueryNet
         /// <inheritdoc/>
         public async Task<ServerInfo> GetServerInfoAsync()
         {
-            const string requestPayload = "Source Engine Query\0";
             var sInfo = new ServerInfo
             {
                 Ping = new Ping().Send(_remoteIpEndpoint.Address).RoundtripTime
             };
 
-            byte[] response = await SendRequestAsync(RequestHeaders.A2S_INFO, Encoding.UTF8.GetBytes(requestPayload));
+            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request());
             if (response.Length > 0)
             {
                 DataResolutionUtils.ExtractData(sInfo, response, nameof(sInfo.EDF), true);
@@ -250,7 +250,7 @@ namespace SteamQueryNet
         /// <inheritdoc/>
         public async Task<int> RenewChallengeAsync()
         {
-            byte[] response = await SendRequestAsync(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(-1));
+            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_RENEW_CHALLENGE_Request());
             if (response.Length > 0)
             {
                 _currentChallenge = BitConverter.ToInt32(response.Skip(DataResolutionUtils.RESPONSE_CODE_INDEX).Take(sizeof(int)).ToArray(), 0);
@@ -273,7 +273,9 @@ namespace SteamQueryNet
                 await RenewChallengeAsync();
             }
 
-            byte[] response = await SendRequestAsync(RequestHeaders.A2S_PLAYER, BitConverter.GetBytes(_currentChallenge));
+            byte[] response = await SendRequestAsync(
+                RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_PLAYER,_currentChallenge));
+
             if (response.Length > 0)
             {
                 return DataResolutionUtils.ExtractListData<Player>(response);
@@ -298,7 +300,9 @@ namespace SteamQueryNet
                 await RenewChallengeAsync();
             }
 
-            byte[] response = await SendRequestAsync(RequestHeaders.A2S_RULES, BitConverter.GetBytes(_currentChallenge));
+            byte[] response = await SendRequestAsync(
+                RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_RULES, _currentChallenge));
+
             if (response.Length > 0)
             {
                 return DataResolutionUtils.ExtractListData<Rule>(response);
@@ -356,30 +360,15 @@ namespace SteamQueryNet
                 }
             }
 
-            UdpClient = UdpClient ?? new UdpClient(new IPEndPoint(IPAddress.Any, 0));
-            UdpClient.Client.SendTimeout = SendTimeout;
-            UdpClient.Client.ReceiveTimeout = ReceiveTimeout;
+            UdpClient = UdpClient ?? new UdpWrapper(new IPEndPoint(IPAddress.Any, 0), SendTimeout, ReceiveTimeout);
             UdpClient.Connect(_remoteIpEndpoint);
         }
 
-        private async Task<byte[]> SendRequestAsync(byte requestHeader, byte[] payload = null)
+        private async Task<byte[]> SendRequestAsync(byte[] request)
         {
-            var request = BuildRequest(requestHeader, payload);
             await UdpClient.SendAsync(request, request.Length);
             UdpReceiveResult result = await UdpClient.ReceiveAsync();
             return result.Buffer;
-        }
-
-        private byte[] BuildRequest(byte headerCode, byte[] extraParams = null)
-        {
-            /* All requests consist of 4 FF's followed by a header code to execute the request.
-             * Check here: https://developer.valvesoftware.com/wiki/Server_queries#Protocol for further information about the protocol. */
-            var request = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, headerCode };
-
-            // If we have any extra payload, concatenate those into our requestHeaders and return;
-            return extraParams != null
-                ? request.Concat(extraParams).ToArray()
-                : request;
         }
     }
 }

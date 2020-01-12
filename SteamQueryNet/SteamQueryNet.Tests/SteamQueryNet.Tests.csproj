@@ -18,4 +18,13 @@
     <ProjectReference Include="..\SteamQueryNet\SteamQueryNet.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Responses\GetPlayersValidResponse.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Responses\ServerInfoValidResponse.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

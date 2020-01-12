@@ -21,10 +21,18 @@ namespace SteamQueryNet.Utils
 
         internal static (string serverAddress, ushort port) ResolveIPAndPortFromString(string serverAddressAndPort)
         {
+            const string steamUrl = "steam://connect/";
             // Check for usual suspects.
             if (string.IsNullOrEmpty(serverAddressAndPort))
             {
                 throw new ArgumentException($"Couldn't parse hostname or port with value: {serverAddressAndPort}", nameof(serverAddressAndPort));
+            }
+
+            // Check if its a steam url.
+            if (serverAddressAndPort.Contains(steamUrl))
+            {
+                // Yep lets get rid of it since we dont need it.
+                serverAddressAndPort = serverAddressAndPort.Replace(steamUrl, string.Empty);
             }
 
             // Lets be a nice guy and clear out all possible copy paste error whitespaces.

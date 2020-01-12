@@ -12,7 +12,12 @@
     string myHostAndPort = "127.0.0.1:27015";
     // or
     string myHostAndPort = "localhost:27015";
+    // or
+    string myHostAndPort = "steam://connect/127.0.0.1:27015";
+    // or
+    string myHostAndPort = "steam://connect/localhost:27015";
     ```
+* Implemented new tests for ip, hostname and port validation.
 
 * Added a CHANGELOG. LUL :)
 
