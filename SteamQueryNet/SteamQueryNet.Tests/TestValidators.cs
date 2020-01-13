@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace SteamQueryNet.Tests
+﻿namespace SteamQueryNet.Tests
 {
     internal static class TestValidators
     {

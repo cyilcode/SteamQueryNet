@@ -1,4 +1,5 @@
 ﻿using SteamQueryNet.Models;
+
 using System;
 using System.Linq;
 using System.Text;

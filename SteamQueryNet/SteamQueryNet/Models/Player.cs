@@ -1,5 +1,6 @@
-﻿using SteamQueryNet.Models.TheShip;
-using SteamQueryNet.Attributes;
+﻿using SteamQueryNet.Attributes;
+using SteamQueryNet.Models.TheShip;
+
 using System;
 
 namespace SteamQueryNet.Models

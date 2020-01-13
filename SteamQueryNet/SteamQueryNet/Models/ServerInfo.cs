@@ -1,6 +1,6 @@
-﻿using SteamQueryNet.Enums;
+﻿using SteamQueryNet.Attributes;
+using SteamQueryNet.Enums;
 using SteamQueryNet.Models.TheShip;
-using SteamQueryNet.Attributes;
 
 namespace SteamQueryNet.Models
 {
