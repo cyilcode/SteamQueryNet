@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-
+using System.Threading.Tasks;
 using Xunit;
 
 namespace SteamQueryNet.Tests
@@ -110,6 +110,28 @@ namespace SteamQueryNet.Tests
             using (var sq = new ServerQuery(udpClientMock.Object, _localIpEndpoint))
             {
                 Assert.Equal(JsonConvert.SerializeObject(expectedObject), JsonConvert.SerializeObject(sq.GetPlayers()));
+            }
+        }
+
+        /*
+         * We keep this test here to be able to have us a notifier when the Rules API becomes available.
+         * So, this is more like an integration test than an unit test.
+         * If this test starts to fail, we'll know that the Rules API started to respond.
+         */
+        [Fact]
+        public void GetRules_ShouldThrowTimeoutException()
+        {
+            // Surf Heaven rulez.
+            const string trustedServer = "steam://connect/54.37.111.217:27015";
+
+            using (var sq = new ServerQuery())
+            {
+                sq.Connect(trustedServer);
+
+                // Make sure that the server is still alive.
+                Assert.True(sq.IsConnected);
+                bool responded = Task.WaitAll(new Task[] { sq.GetRulesAsync() }, 2000);
+                Assert.True(!responded);
             }
         }
 
