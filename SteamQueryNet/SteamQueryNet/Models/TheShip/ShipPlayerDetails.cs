@@ -3,7 +3,7 @@
     /// <summary>
     /// The Ship additional player info.
     /// </summary>
-    public sealed class ShipPlayerDetails
+    public class ShipPlayerDetails
     {
         /// <summary>
         /// Player's deaths.

@@ -1,10 +1,11 @@
-﻿using SteamQueryNet.Models.TheShip;
-using SteamQueryNet.Utils;
+﻿using SteamQueryNet.Attributes;
+using SteamQueryNet.Models.TheShip;
+
 using System;
 
 namespace SteamQueryNet.Models
 {
-    public sealed class Player
+    public class Player
     {
         /// <summary>
         /// Index of player chunk starting from 0.

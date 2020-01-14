@@ -5,7 +5,7 @@ namespace SteamQueryNet.Models.TheShip
     /// <summary>
     /// These fields only exist in a response if the server is running The Ship.
     /// </summary>
-    public sealed class ShipGameInfo
+    public class ShipGameInfo
     {
         /// <summary>
         /// Indicates the game mode.
