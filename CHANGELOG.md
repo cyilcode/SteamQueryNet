@@ -31,8 +31,12 @@
 
 * Removed `sealed` modifiers from all `SteamQueryNet.Models` namespace.
 
+* `IServerQuery` moved into `SteamQueryNet.Interfaces` namespace.
+
 ### 4. Hard-deprecations
 
 * `ServerQuery` constructor parameter `int port` now changed to `ushort` to remove all integer range checks since the UDP port is already literally an `ushort`.
 
 * Removed port range tests.
+
+* `IServerQuery` moved into `SteamQueryNet.Interfaces` namespace.
