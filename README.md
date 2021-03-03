@@ -111,7 +111,7 @@ List<Player> players = serverQuery.GetPlayers();
 
 [Rules](https://github.com/cyilcode/SteamQueryNet/blob/master/SteamQueryNet/SteamQueryNet/Models/Rule.cs)
 ```csharp
-List<Rules> rules = serverQuery.GetRules();
+List<Rule> rules = serverQuery.GetRules();
 ```
 
 While **it is not encouraged**, you can chain `Connect` function or Non-empty Constructors to get information in a single line.
