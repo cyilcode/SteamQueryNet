@@ -1,4 +1,4 @@
-using SteamQueryNet.Interfaces;
+﻿using SteamQueryNet.Interfaces;
 using SteamQueryNet.Models;
 using SteamQueryNet.Services;
 using SteamQueryNet.Utils;
@@ -144,7 +144,12 @@ namespace SteamQueryNet
                 Ping = new Ping().Send(_remoteIpEndpoint.Address)?.RoundtripTime ?? default
             };
 
-            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request());
+            if (_currentChallenge == 0)
+            {
+                await RenewChallengeAsync();
+            }
+            
+            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request(_currentChallenge));
             if (response.Length > 0)
             {
                 DataResolutionUtils.ExtractData(sInfo, response, nameof(sInfo.EDF), true);
