@@ -1,4 +1,4 @@
-﻿using SteamQueryNet.Interfaces;
+using SteamQueryNet.Interfaces;
 using SteamQueryNet.Models;
 using SteamQueryNet.Services;
 using SteamQueryNet.Utils;
@@ -141,7 +141,7 @@ namespace SteamQueryNet
         {
             var sInfo = new ServerInfo
             {
-                Ping = new Ping().Send(_remoteIpEndpoint.Address).RoundtripTime
+                Ping = new Ping().Send(_remoteIpEndpoint.Address)?.RoundtripTime ?? default
             };
 
             byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request());
