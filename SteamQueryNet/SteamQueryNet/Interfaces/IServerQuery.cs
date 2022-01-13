@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SteamQueryNet.Interfaces
@@ -18,7 +19,7 @@ namespace SteamQueryNet.Interfaces
 		/// Renews the server challenge code of the ServerQuery instance in order to be able to execute further operations.
 		/// </summary>
 		/// <returns>The new created challenge.</returns>
-		Task<int> RenewChallengeAsync();
+		Task<int> RenewChallengeAsync(CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Configures and Connects the created instance of SteamQuery UDP socket for Steam Server Query Operations.
@@ -62,7 +63,7 @@ namespace SteamQueryNet.Interfaces
 		/// Requests and serializes the server information.
 		/// </summary>
 		/// <returns>Serialized ServerInfo instance.</returns>
-		Task<ServerInfo> GetServerInfoAsync();
+		Task<ServerInfo> GetServerInfoAsync(CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Requests and serializes the list of player information. 
@@ -74,7 +75,7 @@ namespace SteamQueryNet.Interfaces
 		/// Requests and serializes the list of player information. 
 		/// </summary>
 		/// <returns>Serialized list of Player instances.</returns>
-		Task<List<Player>> GetPlayersAsync();
+		Task<List<Player>> GetPlayersAsync(CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Requests and serializes the list of rules defined by the server.
@@ -90,6 +91,6 @@ namespace SteamQueryNet.Interfaces
 		/// Before the update rules got truncated when exceeding MTU, after the update rules reply is not sent at all.
 		/// </summary>
 		/// <returns>Serialized list of Rule instances.</returns>
-		Task<List<Rule>> GetRulesAsync();
+		Task<List<Rule>> GetRulesAsync(CancellationToken cancellationToken);
 	}
 }

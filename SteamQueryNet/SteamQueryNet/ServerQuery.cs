@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("SteamQueryNet.Tests")]
@@ -103,7 +104,7 @@ namespace SteamQueryNet
 		}
 
 		/// <inheritdoc/>
-		public async Task<ServerInfo> GetServerInfoAsync()
+		public async Task<ServerInfo> GetServerInfoAsync(CancellationToken cancellationToken)
 		{
 			var sInfo = new ServerInfo
 			{
@@ -112,10 +113,10 @@ namespace SteamQueryNet
 
 			if (m_currentChallenge == 0)
 			{
-				await RenewChallengeAsync();
+				await RenewChallengeAsync(cancellationToken);
 			}
 
-			byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request(m_currentChallenge));
+			byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request(m_currentChallenge), cancellationToken);
 			if (response.Length > 0)
 			{
 				DataResolutionUtils.ExtractData(sInfo, response, nameof(sInfo.EDF), true);
@@ -127,13 +128,16 @@ namespace SteamQueryNet
 		/// <inheritdoc/>
 		public ServerInfo GetServerInfo()
 		{
-			return Helpers.RunSync(GetServerInfoAsync);
+			Task<ServerInfo> task = GetServerInfoAsync(new CancellationTokenSource().Token);
+			task.RunSynchronously();
+			return task.Result;
+			// return Helpers.RunSync(GetServerInfoAsync);
 		}
 
 		/// <inheritdoc/>
-		public async Task<int> RenewChallengeAsync()
+		public async Task<int> RenewChallengeAsync(CancellationToken cancellationToken)
 		{
-			byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_RENEW_CHALLENGE_Request());
+			byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_RENEW_CHALLENGE_Request(), cancellationToken);
 			if (response.Length > 0)
 			{
 				m_currentChallenge = BitConverter.ToInt32(response.Skip(DataResolutionUtils.RESPONSE_CODE_INDEX).Take(sizeof(int)).ToArray(), 0);
@@ -145,19 +149,23 @@ namespace SteamQueryNet
 		/// <inheritdoc/>
 		public int RenewChallenge()
 		{
-			return Helpers.RunSync(RenewChallengeAsync);
+			Task<int> task = RenewChallengeAsync(new CancellationTokenSource().Token);
+			task.RunSynchronously();
+			return task.Result;
+			// return Helpers.RunSync(RenewChallengeAsync);
 		}
 
 		/// <inheritdoc/>
-		public async Task<List<Player>> GetPlayersAsync()
+		public async Task<List<Player>> GetPlayersAsync(CancellationToken cancellationToken)
 		{
 			if (m_currentChallenge == 0)
 			{
-				await RenewChallengeAsync();
+				await RenewChallengeAsync(cancellationToken);
 			}
 
 			byte[] response = await SendRequestAsync(
-				RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_PLAYER, m_currentChallenge));
+				RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_PLAYER, m_currentChallenge),
+				cancellationToken);
 
 			if (response.Length > 0)
 			{
@@ -172,19 +180,23 @@ namespace SteamQueryNet
 		/// <inheritdoc/>
 		public List<Player> GetPlayers()
 		{
-			return Helpers.RunSync(GetPlayersAsync);
+			Task<List<Player>> task = GetPlayersAsync(new CancellationTokenSource().Token);
+			task.RunSynchronously();
+			return task.Result;
+			// return Helpers.RunSync(GetPlayersAsync);
 		}
 
 		/// <inheritdoc/>
-		public async Task<List<Rule>> GetRulesAsync()
+		public async Task<List<Rule>> GetRulesAsync(CancellationToken cancellationToken)
 		{
 			if (m_currentChallenge == 0)
 			{
-				await RenewChallengeAsync();
+				await RenewChallengeAsync(cancellationToken);
 			}
 
 			byte[] response = await SendRequestAsync(
-				RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_RULES, m_currentChallenge));
+				RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_RULES, m_currentChallenge),
+				cancellationToken);
 
 			if (response.Length > 0)
 			{
@@ -199,7 +211,10 @@ namespace SteamQueryNet
 		/// <inheritdoc/>
 		public List<Rule> GetRules()
 		{
-			return Helpers.RunSync(GetRulesAsync);
+			Task<List<Rule>> task = GetRulesAsync(new CancellationTokenSource().Token);
+			task.RunSynchronously();
+			return task.Result;
+			// return Helpers.RunSync(GetRulesAsync);
 		}
 
 		/// <summary>
@@ -247,10 +262,10 @@ namespace SteamQueryNet
 			UdpClient.Connect(m_remoteIpEndpoint);
 		}
 
-		private async Task<byte[]> SendRequestAsync(byte[] request)
+		private async Task<byte[]> SendRequestAsync(byte[] request, CancellationToken cancellationToken)
 		{
-			await UdpClient.SendAsync(request, request.Length);
-			UdpReceiveResult result = await UdpClient.ReceiveAsync();
+			await UdpClient.SendAsync(request, cancellationToken);
+			UdpReceiveResult result = await UdpClient.ReceiveAsync(cancellationToken);
 			return result.Buffer;
 		}
 	}

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SteamQueryNet.Interfaces
@@ -13,8 +14,8 @@ namespace SteamQueryNet.Interfaces
 
 		void Connect(IPEndPoint remoteIpEndpoint);
 
-		Task<int> SendAsync(byte[] datagram, int bytes);
+		Task<int> SendAsync(byte[] datagram, CancellationToken cancellationToken);
 
-		Task<UdpReceiveResult> ReceiveAsync();
+		Task<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken);
 	}
 }

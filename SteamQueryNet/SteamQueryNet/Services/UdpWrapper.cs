@@ -2,6 +2,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SteamQueryNet.Services
@@ -15,8 +16,8 @@ namespace SteamQueryNet.Services
 		public UdpWrapper(IPEndPoint localIpEndPoint, int sendTimeout, int receiveTimeout)
 		{
 			m_udpClient = new UdpClient(localIpEndPoint);
-			this.m_sendTimeout = sendTimeout;
-			this.m_receiveTimeout = receiveTimeout;
+			m_sendTimeout = sendTimeout;
+			m_receiveTimeout = receiveTimeout;
 		}
 
 		public bool IsConnected => m_udpClient.Client.Connected;
@@ -36,34 +37,47 @@ namespace SteamQueryNet.Services
 			m_udpClient.Dispose();
 		}
 
-		public Task<UdpReceiveResult> ReceiveAsync()
+		public async Task<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
 		{
-			var asyncResult = m_udpClient.BeginReceive(null, null);
-			asyncResult.AsyncWaitHandle.WaitOne(m_receiveTimeout);
-			if (asyncResult.IsCompleted)
+			var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			source.CancelAfter(m_receiveTimeout);
+
+			try
 			{
-				IPEndPoint remoteEP = null;
-				byte[] receivedData = m_udpClient.EndReceive(asyncResult, ref remoteEP);
-				return Task.FromResult(new UdpReceiveResult(receivedData, remoteEP));
+				return await m_udpClient.ReceiveAsync(source.Token);
 			}
-			else
+			catch (OperationCanceledException)
 			{
-				throw new TimeoutException();
+				if (cancellationToken.IsCancellationRequested)
+				{
+					throw;
+				}
+				else
+				{
+					throw new TimeoutException();
+				}
 			}
 		}
 
-		public Task<int> SendAsync(byte[] datagram, int bytes)
+		public async Task<int> SendAsync(byte[] datagram, CancellationToken cancellationToken)
 		{
-			var asyncResult = m_udpClient.BeginSend(datagram, bytes, null, null);
-			asyncResult.AsyncWaitHandle.WaitOne(m_sendTimeout);
-			if (asyncResult.IsCompleted)
+			var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			source.CancelAfter(m_receiveTimeout);
+
+			try
 			{
-				int num = m_udpClient.EndSend(asyncResult);
-				return Task.FromResult(num);
+				return await m_udpClient.SendAsync(datagram, source.Token);
 			}
-			else
+			catch (OperationCanceledException)
 			{
-				throw new TimeoutException();
+				if (cancellationToken.IsCancellationRequested)
+				{
+					throw;
+				}
+				else
+				{
+					throw new TimeoutException();
+				}
 			}
 		}
 	}
