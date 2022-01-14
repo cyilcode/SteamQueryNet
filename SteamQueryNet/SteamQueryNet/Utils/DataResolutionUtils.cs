@@ -64,9 +64,7 @@ namespace SteamQueryNet.Utils
 				if (property.PropertyType == typeof(string))
 				{
 					// Clear the buffer first then take till the termination.
-					takenBytes = enumerableSource
-						.SkipWhile(x => x == 0)
-						.TakeWhile(x => x != 0);
+					takenBytes = enumerableSource.TakeWhile(x => x != 0);
 
 					// Parse it into a string.
 					property.SetValue(objectRef, Encoding.UTF8.GetString(takenBytes.ToArray()));
