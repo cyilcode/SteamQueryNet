@@ -169,7 +169,7 @@ namespace SteamQueryNet
 
 			if (response.Length > 0)
 			{
-				return DataResolutionUtils.ExtractListData<Player>(response);
+				return DataResolutionUtils.ExtractPlayersData<Player>(response);
 			}
 			else
 			{
@@ -197,10 +197,9 @@ namespace SteamQueryNet
 			byte[] response = await SendRequestAsync(
 				RequestHelpers.PrepareAS2_GENERIC_Request(RequestHeaders.A2S_RULES, m_currentChallenge),
 				cancellationToken);
-
 			if (response.Length > 0)
 			{
-				return DataResolutionUtils.ExtractListData<Rule>(response);
+				return DataResolutionUtils.ExtractRulesData<Rule>(response);
 			}
 			else
 			{

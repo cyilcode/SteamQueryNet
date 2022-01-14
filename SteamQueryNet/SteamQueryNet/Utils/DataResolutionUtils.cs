@@ -97,7 +97,7 @@ namespace SteamQueryNet.Utils
 			return enumerableSource;
 		}
 
-		internal static List<TObject> ExtractListData<TObject>(byte[] rawSource)
+		internal static List<TObject> ExtractPlayersData<TObject>(byte[] rawSource)
 			where TObject : class
 		{
 			// Create a list to contain the serialized data.
@@ -106,8 +106,40 @@ namespace SteamQueryNet.Utils
 			// Skip the response headers.
 			byte itemCount = rawSource[RESPONSE_CODE_INDEX];
 
-			// Skip +1 for item_count.
-			IEnumerable<byte> dataSource = rawSource.Skip(RESPONSE_HEADER_COUNT + 1);
+			// Skip +1 for item_count
+			IEnumerable<byte> dataSource = rawSource.Skip(RESPONSE_HEADER_COUNT + sizeof(byte));
+
+			for (byte i = 0; i < itemCount; i++)
+			{
+				// Activate a new instance of the object.
+				var objectInstance = Activator.CreateInstance<TObject>();
+
+				// Extract the data.
+				dataSource = ExtractData(objectInstance, dataSource.ToArray());
+
+				// Add it into the list.
+				objectList.Add(objectInstance);
+			}
+
+			return objectList;
+		}
+
+		internal static List<TObject> ExtractRulesData<TObject>(byte[] rawSource)
+			where TObject : class
+		{
+			// Create a list to contain the serialized data.
+			var objectList = new List<TObject>();
+
+			// Skip the response headers.
+			Int16 itemCount = BitConverter.ToInt16(
+				rawSource
+					.Skip(RESPONSE_CODE_INDEX)
+					.Take(sizeof(Int16))
+					.ToArray()
+				);
+
+			// Skip +2 for item_count, because its short
+			IEnumerable<byte> dataSource = rawSource.Skip(RESPONSE_HEADER_COUNT + sizeof(Int16));
 
 			for (byte i = 0; i < itemCount; i++)
 			{
