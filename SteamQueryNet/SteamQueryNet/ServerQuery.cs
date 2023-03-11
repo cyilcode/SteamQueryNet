@@ -35,14 +35,14 @@ namespace SteamQueryNet
         }
 
         /// <summary>
-        /// Amount of time in miliseconds to terminate send operation if the server won't respond.
+        /// Amount of time in miliseconds to terminate send operation if the server won't respond. Defaults to 15000 (15s).
         /// </summary>
-        public int SendTimeout { get; set; }
+        public int SendTimeout { get; set; } = 15000;
 
         /// <summary>
-        /// Amount of time in miliseconds to terminate receive operation if the server won't respond.
+        /// Amount of time in miliseconds to terminate receive operation if the server won't respond. Defaults to 15000 (15s).
         /// </summary>
-        public int ReceiveTimeout { get; set; }
+        public int ReceiveTimeout { get; set; } = 15000;
 
         /// <summary>
         /// Creates a new instance of ServerQuery with given UDPClient and remote endpoint.
@@ -141,10 +141,15 @@ namespace SteamQueryNet
         {
             var sInfo = new ServerInfo
             {
-                Ping = new Ping().Send(_remoteIpEndpoint.Address).RoundtripTime
+                Ping = new Ping().Send(_remoteIpEndpoint.Address)?.RoundtripTime ?? default
             };
 
-            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request());
+            if (_currentChallenge == 0)
+            {
+                await RenewChallengeAsync();
+            }
+            
+            byte[] response = await SendRequestAsync(RequestHelpers.PrepareAS2_INFO_Request(_currentChallenge));
             if (response.Length > 0)
             {
                 DataResolutionUtils.ExtractData(sInfo, response, nameof(sInfo.EDF), true);
